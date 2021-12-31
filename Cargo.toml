@@ -1,0 +1,10 @@
+[package]
+name = "rusty-sheet"
+version = "0.1.0"
+authors = ["Dor Shahaf <soapseller@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+skia-safe = {version = "*", features=["egl", "wayland"] }
+glutin = "0.28"
+gl = "0.14.0"
