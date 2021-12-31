@@ -5,4 +5,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/rust:1-${VARIANT}
 
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends pkg-config libssl-dev python2 python clang libwayland-egl1 libwayland-dev 
+    && apt-get -y install --no-install-recommends \
+        pkg-config libssl-dev python2 python clang \
+        libwayland-egl1 libwayland-dev libegl1-mesa-dev libgles2-mesa-dev \
+        libxcursor1 libxrandr2 libxi6
