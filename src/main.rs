@@ -1,10 +1,25 @@
-
 mod renderer;
 mod sheet;
 mod sheet_state;
 
-use sheet::*;
+use std::time::Instant;
+
 use sheet_state::*;
+
+use crate::sheet::Cell;
+
+const DEBOUNCE_MILLIS: u128 = 120;
+
+fn debounce<F>(mut func: F)  -> impl FnMut(&mut SheetState) where F: FnMut(&mut SheetState) {
+    let mut last = Box::new(Instant::now());
+    move |state| {
+        if last.elapsed().as_millis() > DEBOUNCE_MILLIS
+        {
+            func(state);
+            last = Box::new(Instant::now());
+        }
+    }
+}
 
 fn main() {
     use gl::types::*;
@@ -105,14 +120,23 @@ fn main() {
         windowed_context,
     };
 
-    let mut state = SheetState{selected: CellIdx{col: 3, row: 2}};
+    let mut state = SheetState::new();
+
+    let handle_move = move |state: &mut SheetState| {
+        state.text = state.sheet.get_text(&state.selected);
+    };
+
+    let mut handle_left = debounce(move |state| { state.selected.col = state.selected.col.saturating_sub(1); handle_move(state); });
+    let mut handle_right = debounce(move |state| { state.selected.col += 1; handle_move(state); });
+    let mut handle_up = debounce(move |state| { state.selected.row = state.selected.row.saturating_sub(1); handle_move(state); });
+    let mut handle_down = debounce(move |state| { state.selected.row += 1; handle_move(state); });
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
         #[allow(deprecated)]
         match event {
-            Event::LoopDestroyed => {}
+            Event::LoopDestroyed => {},
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(physical_size) => {
                     env.surface =
@@ -120,6 +144,15 @@ fn main() {
                     env.windowed_context.resize(physical_size)
                 }
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::ReceivedCharacter(char) => {
+                    match char {
+                        '\u{8}' => { state.text.pop(); },
+                        '\r' => { state.sheet.insert(state.selected.clone(), Cell{value: state.text.clone()}) },
+                        _ => { state.text.push(char); },
+                    }
+                    //println!("Got char: {:?}", char);
+                    env.windowed_context.window().request_redraw();
+                },
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -135,12 +168,13 @@ fn main() {
                             println!("Quit nicely...");
                         }
                     }
+                    
                     match virtual_keycode {
                         // TBD: Add debouncer per key
-                        Some(VirtualKeyCode::Left) => { state.selected.col = state.selected.col.saturating_sub(1); },
-                        Some(VirtualKeyCode::Right) => { state.selected.col += 1; },
-                        Some(VirtualKeyCode::Up) => { state.selected.row = state.selected.row.saturating_sub(1); },
-                        Some(VirtualKeyCode::Down) => { state.selected.row += 1; },
+                        Some(VirtualKeyCode::Left) => { handle_left(&mut state); },
+                        Some(VirtualKeyCode::Right) => { handle_right(&mut state); },
+                        Some(VirtualKeyCode::Up) => { handle_up(&mut state); },
+                        Some(VirtualKeyCode::Down) => { handle_down(&mut state); },
                         _ => (),
                     }
                     env.windowed_context.window().request_redraw();
@@ -154,11 +188,11 @@ fn main() {
                 {
                     let canvas = env.surface.canvas();
                     canvas.clear(Color::WHITE);
-                    renderer::render(canvas, &state);
+                    renderer::render(canvas, &mut state);
                 }
                 env.surface.canvas().flush();
                 env.windowed_context.swap_buffers().unwrap();
-            }
+            },
             _ => (),
         }
     });}
