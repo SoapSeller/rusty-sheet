@@ -1,5 +1,7 @@
 #![allow(clippy::unusual_byte_groupings)]
 
+use std::cmp;
+
 use skia_safe::{
     Paint, PaintStyle, Path, ISize, Rect,
     FontMgr, Font,
@@ -24,7 +26,7 @@ fn col_to_letters(col: usize) -> String {
         }
         scratch -= 1;
     } 
-    
+
     text
 }
 
@@ -50,35 +52,50 @@ fn calc_lines_col_width() -> f32 {
 
 fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut SheetState) {
     const STROKE: f32 = 1.0;
-  
+
     let mgr = FontMgr::new();
     let typeface = mgr.match_family_style(FONT_NAME, skia_safe::FontStyle::normal()).unwrap();
     let font = Font::new(typeface, Some(14.0));
-    
+
     let lines_col_width = calc_lines_col_width();
 
-    
     let text_paint = Paint::default();
 
+    if (size.width as f32) < (lines_col_width + (CELL_SIZE.0 as f32) * 2.0) || (size.height as f32) < ((CELL_SIZE.1 as f32) * 3.0) {
+        // Too small
+        return;
+    }
 
     {
-        let rect = cell_rect(Some(&state.view_offset), &state.selected);//.with_offset((calc_lines_col_width(), (INPUT_HEIGHT + CELL_SIZE.1) as f32));
-        if rect.left() < 0.0 {
-            state.view_offset.col -= 1;
+        loop {
+            let mut changed = false;
+            let rect = cell_rect(Some(&state.view_offset), &state.selected);
+            if rect.left() < 0.0 {
+                state.view_offset.col -= 1;
+                changed = true;
+            }
+
+            if rect.right() > (size.width as f32 - lines_col_width) {
+                state.view_offset.col += 1;
+                changed = true;
+            }
+
+            if rect.top() < 0.0 {
+                state.view_offset.row -= 1;
+                changed = true;
+            }
+
+            if rect.bottom() > (size.height - CELL_SIZE.1 as i32) as f32 {
+                state.view_offset.row += 1;
+                changed = true;
+            }
+
+            if !changed { break; }
         }
 
-        if rect.right() > (size.width as f32 - lines_col_width) {
-            state.view_offset.col += 1;
-        }
-
-        if rect.top() < 0.0 {
-            state.view_offset.row -= 1;
-        }
-
-        if rect.bottom() > (size.height - CELL_SIZE.1 as i32) as f32 {
-            state.view_offset.row += 1;
-        }
-
+        // Protect from overflow
+        state.selected.col = cmp::max(state.selected.col, state.view_offset.col);
+        state.selected.row = cmp::max(state.selected.row, state.view_offset.row);
     }
 
     // Headers
@@ -86,7 +103,7 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
         let mut paint = Paint::default();
         //paint.set_stroke_width(STROKE);
         paint.set_color(0xff_e5e5e5);
-                            
+
         canvas.draw_rect(Rect::new(0.0, 0.0, size.width as f32, CELL_SIZE.1 as f32), &paint);
         canvas.draw_rect(Rect::new(0.0, 0.0, lines_col_width as f32, size.height as f32), &paint);
 
@@ -127,9 +144,8 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
         let mut paint = Paint::default();
         paint.set_stroke_width(STROKE);
         paint.set_color(0xff_c1c1c1);
-                            
-        paint.set_style(PaintStyle::Stroke);
 
+        paint.set_style(PaintStyle::Stroke);
 
         let mut path = Path::new();
         // Draw rows
@@ -160,7 +176,7 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
         {
             for j in 0..((size.height / CELL_SIZE.1 as i32) as u32) {
                 for i in 0..((size.width / CELL_SIZE.0 as i32) as u32) {
-                    
+
                     let rect = {
                         // Idx for rect
                         let idx = CellIdx{col: i, row: j};    
@@ -181,7 +197,7 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
                             canvas.draw_str(cell.value.as_str(), (rect.left() + 2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
                             canvas.restore();
                         }
-                        
+
                     }
                 }
             }
@@ -230,5 +246,79 @@ pub fn render(canvas: &mut skia_safe::canvas::Canvas, state: &mut SheetState) {
     render_grid(canvas, &grid_size, state);
     canvas.restore();
 
-    
+}
+
+#[cfg(test)]
+mod tests {
+    use skia_safe::Canvas;
+
+    use super::*;
+
+    #[test]
+    fn basic_rendering() {
+        for s in [(0, 0), (10, 10), (100, 100), (400, 400), (800, 400), (1920, 1080), (7680, 4320)] {
+            let size = ISize{width: s.0, height: s.1};
+            let mut canvas = Canvas::new(size, None).unwrap();
+
+            let mut state = SheetState::new();
+
+            // Render the grid
+            render_grid(&mut canvas, &size, &mut state);
+        }
+    }
+
+    #[test]
+    fn test_selection_handling() {
+        let size = ISize{width: 1920, height: 1080};
+        let mut canvas = Canvas::new(size, None).unwrap();
+
+        let mut state = SheetState::new();
+
+        // Validate initial state
+        assert_eq!(state.selected.col, 0);
+        assert_eq!(state.selected.row, 0);
+        assert_eq!(state.view_offset.col, 0);
+        assert_eq!(state.view_offset.row, 0);
+
+        // Render the grid
+        render_grid(&mut canvas, &size, &mut state);
+
+        // Move X selection far far away
+        state.selected.col = 1000;
+        render_grid(&mut canvas, &size, &mut state);
+
+        assert_eq!(state.selected.col, 1000);
+        assert_eq!(state.selected.row, 0);
+        assert_ne!(state.view_offset.col, 0);
+        assert_eq!(state.view_offset.row, 0);
+        assert!(state.view_offset.col < state.selected.col);
+
+        // Move Y selection far far away
+        state.selected.row = 1000;
+        render_grid(&mut canvas, &size, &mut state);
+        assert_eq!(state.selected.col, 1000);
+        assert_eq!(state.selected.row, 1000);
+        assert_ne!(state.view_offset.col, 0);
+        assert_ne!(state.view_offset.row, 0);
+        assert!(state.view_offset.col < state.selected.col);
+        assert!(state.view_offset.row < state.selected.row);
+
+        // Move X selection back to zero
+        state.selected.col = 0;
+        render_grid(&mut canvas, &size, &mut state);
+
+        assert_eq!(state.selected.col, 0);
+        assert_eq!(state.selected.row, 1000);
+        assert_eq!(state.view_offset.col, 0);
+        assert_ne!(state.view_offset.row, 0);
+        assert!(state.view_offset.row < state.selected.row);
+
+        // Move Y selection back to zero
+        state.selected.row = 0;
+        render_grid(&mut canvas, &size, &mut state);
+        assert_eq!(state.selected.col, 0);
+        assert_eq!(state.selected.row, 0);
+        assert_eq!(state.view_offset.col, 0);
+        assert_eq!(state.view_offset.row, 0);
+    }
 }
