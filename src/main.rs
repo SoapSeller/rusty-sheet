@@ -6,8 +6,6 @@ use std::time::Instant;
 
 use sheet_state::*;
 
-use crate::sheet::Cell;
-
 const DEBOUNCE_MILLIS: u128 = 120;
 
 fn debounce<F>(mut func: F)  -> impl FnMut(&mut SheetState) where F: FnMut(&mut SheetState) {
@@ -147,7 +145,7 @@ fn main() {
                 WindowEvent::ReceivedCharacter(char) => {
                     match char {
                         '\u{8}' => { state.text.pop(); },
-                        '\r' => { state.sheet.insert(state.selected.clone(), Cell{value: state.text.clone()}) },
+                        '\r' => { state.sheet.set_text(state.selected.clone(), state.text.clone()) },
                         _ => { state.text.push(char); },
                     }
                     //println!("Got char: {:?}", char);
@@ -168,7 +166,7 @@ fn main() {
                             println!("Quit nicely...");
                         }
                     }
-                    
+
                     match virtual_keycode {
                         // TBD: Add debouncer per key
                         Some(VirtualKeyCode::Left) => { handle_left(&mut state); },

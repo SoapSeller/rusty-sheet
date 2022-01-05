@@ -186,15 +186,17 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
                     // Idx for value
                     let idx = CellIdx{col: i, row: j} + state.view_offset.clone();
 
-                    if let Some(cell) = state.sheet.get(&idx) {
-                        let (_, bounds) = font.measure_str(cell.value.as_str(), None);
+                    let text = state.get_value(&idx);
+                    if !text.is_empty() {
+                        let str = text.as_str();
+                        let (_, bounds) = font.measure_str(str, None);
 
                         if rect.width() > bounds.width() {
-                            canvas.draw_str(cell.value.as_str(), (rect.left() + (rect.width() - bounds.width())/2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
+                            canvas.draw_str(str, (rect.left() + (rect.width() - bounds.width())/2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
                         } else {
                             canvas.save();
                             canvas.clip_rect(rect, None, None);
-                            canvas.draw_str(cell.value.as_str(), (rect.left() + 2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
+                            canvas.draw_str(str, (rect.left() + 2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
                             canvas.restore();
                         }
 
