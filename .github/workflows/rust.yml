@@ -26,7 +26,7 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Install Deps
-      run: apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install --no-install-recommends pkg-config libssl-dev python2 python clang libwayland-egl1 libwayland-dev libegl1-mesa-dev libgles2-mesa-dev libxcursor1 libxrandr2 libxi6
+      run: sudo apt-get update && export DEBIAN_FRONTEND=noninteractive && sudo apt-get -y install --no-install-recommends pkg-config libssl-dev python2 python clang libwayland-egl1 libwayland-dev libegl1-mesa-dev libgles2-mesa-dev libxcursor1 libxrandr2 libxi6
     - name: Build
       run: cargo build --verbose
     - name: Run tests
