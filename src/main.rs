@@ -168,7 +168,6 @@ fn main() {
                     }
 
                     match virtual_keycode {
-                        // TBD: Add debouncer per key
                         Some(VirtualKeyCode::Left) => { handle_left(&mut state); },
                         Some(VirtualKeyCode::Right) => { handle_right(&mut state); },
                         Some(VirtualKeyCode::Up) => { handle_up(&mut state); },

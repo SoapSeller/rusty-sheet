@@ -1,0 +1,11 @@
+Alpha = { 'A'..'Z' }
+Alphas = { (Alpha)+ }
+
+Digit = { '0'..'9' }
+Digits = { (Digit)+ }
+
+Reference = { Alphas ~ Digits ~ !(Alpha) }
+
+Expr = { SOI ~ ("=") ~ Reference ~ EOI }
+
+WHITESPACE = _{ " " }

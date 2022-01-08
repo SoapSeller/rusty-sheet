@@ -19,7 +19,6 @@ fn col_to_letters(col: usize) -> String {
     loop {
         let current: u8 = (scratch % 26) as u8;
         text.insert(0, (current+65) as char);
-        //text.push((current+65) as char);
         scratch /=  26;
         if scratch == 0 {
             break;

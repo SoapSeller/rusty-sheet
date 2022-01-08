@@ -8,3 +8,5 @@ edition = "2021"
 skia-safe = {version = "*", features=["egl", "wayland"] }
 glutin = "0.28"
 gl = "0.14.0"
+pest = "2.1"
+pest_derive = "2.1"
