@@ -29,9 +29,9 @@ fn str_to_col(s: &str) -> u32 {
     col
 }
 
-fn calc_value(sheet_state: &SheetState, text: String) -> String
+fn calc_value(sheet_state: &SheetState, text: &str) -> String
 {
-    let parsed = SimpleParser::parse(Rule::Expr, text.as_str());
+    let parsed = SimpleParser::parse(Rule::Expr, text);
     match parsed {
         Ok(pairs) => {
             for pair in pairs {
@@ -52,7 +52,7 @@ fn calc_value(sheet_state: &SheetState, text: String) -> String
             }
             "Error".to_string()
          },
-        _  => { text }
+        _  => { text.to_string() }
     }
 }
 
@@ -64,9 +64,17 @@ impl SheetState {
     pub fn get_value(&self, idx: &CellIdx) -> String
     {
         let text = self.sheet.get_text(idx);
-        if text.is_empty() { return text; }
+        let text = text.trim();
+        if text.is_empty() { return text.to_string(); }
 
-        calc_value(self, text)
+        let semi_final = calc_value(self, text);
+        let splt = semi_final.split('\r').collect::<Vec<&str>>();
+
+        if splt.len() > 1 {
+            splt[0].to_string()
+        } else {
+            semi_final
+        }
     }
 
 }

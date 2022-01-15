@@ -11,7 +11,6 @@ use crate::{sheet_state::*, sheet::{CellIdx}};
 
 const FONT_NAME: &'static str = "DejaVu Sans Mono";
 const CELL_SIZE: (usize, usize) = (80, 20);
-const INPUT_HEIGHT: usize = 40;
 
 fn col_to_letters(col: usize) -> String {
     let mut scratch = col-1;
@@ -225,16 +224,28 @@ fn render_input(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &Sh
         let mut font = Font::new(typeface, Some(18.0));
         font.set_subpixel(true);
 
-        let (_, bounds) = font.measure_str(state.text.as_str(), None);
-        canvas.draw_str(state.text.as_str(), (4.0, ((size.height-1) as f32 + bounds.height())/2.0), &font, &text_paint);
+
+        let splt = state.text.split('\r');
+
+        let mut offset = 8.0f32;
+        for txt in splt {
+            let txt_measure = if !txt.is_empty() {
+                txt
+            } else {
+                "X"
+            };
+            let (_, bounds) = font.measure_str(txt_measure, None);
+            canvas.draw_str(txt, (8.0, bounds.height() + offset) , &font, &text_paint);
+            offset += bounds.height() + 4.0;
+        }
     }
 }
 
 pub fn render(canvas: &mut skia_safe::canvas::Canvas, state: &mut SheetState) {
     let full_size = canvas.image_info().dimensions();
 
-    let input_size = ISize{width: full_size.width, height: INPUT_HEIGHT as i32};
-    let grid_size = ISize{width: full_size.width, height: full_size.height-input_size.height};
+    let input_size = ISize{width: (full_size.width as f32 * 0.3) as i32, height: full_size.height};
+    let grid_size = ISize{width: full_size.width - input_size.width, height: full_size.height};
 
     canvas.reset_matrix();
     //canvas.clip_rect(Rect::from_isize(input_size), None, None);
@@ -243,7 +254,7 @@ pub fn render(canvas: &mut skia_safe::canvas::Canvas, state: &mut SheetState) {
     //canvas.reset_matrix();
     //canvas.clip_rect(Rect::new(0.0, input_size.height as f32, full_size.width as f32, full_size.height as f32), None, None);
     canvas.save();
-    canvas.translate((0.0, input_size.height as f32));
+    canvas.translate((input_size.width as f32, 0.0));
     render_grid(canvas, &grid_size, state);
     canvas.restore();
 

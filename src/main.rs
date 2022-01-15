@@ -4,6 +4,7 @@ mod sheet_state;
 
 use std::time::Instant;
 
+use glutin::event::ModifiersState;
 use sheet_state::*;
 
 const DEBOUNCE_MILLIS: u128 = 120;
@@ -120,14 +121,29 @@ fn main() {
 
     let mut state = SheetState::new();
 
-    let handle_move = move |state: &mut SheetState| {
+    let pre_move = move |state: &mut SheetState| {
+        state.sheet.set_text(state.selected.clone(), state.text.trim_end().to_string());
+    };
+    let post_move = move |state: &mut SheetState| {
         state.text = state.sheet.get_text(&state.selected);
     };
 
-    let mut handle_left = debounce(move |state| { state.selected.col = state.selected.col.saturating_sub(1); handle_move(state); });
-    let mut handle_right = debounce(move |state| { state.selected.col += 1; handle_move(state); });
-    let mut handle_up = debounce(move |state| { state.selected.row = state.selected.row.saturating_sub(1); handle_move(state); });
-    let mut handle_down = debounce(move |state| { state.selected.row += 1; handle_move(state); });
+    //let compose_move = move |func: &mut dyn FnMut(&mut SheetState)| {
+    let compose_move = move |func: fn(&mut SheetState)| {
+        debounce(move |state| {
+            pre_move(state);
+            func(state);
+            post_move(state);
+        })
+    };
+
+
+    let mut handle_left = compose_move(move |state| { state.selected.col = state.selected.col.saturating_sub(1); });
+    let mut handle_right = compose_move(move |state| { state.selected.col += 1; });
+    let mut handle_up = compose_move(move |state| { state.selected.row = state.selected.row.saturating_sub(1); });
+    let mut handle_down = compose_move(move |state| { state.selected.row += 1; });
+
+    let mut ctrl_pressed = false;
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -142,13 +158,20 @@ fn main() {
                     env.windowed_context.resize(physical_size)
                 }
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::ModifiersChanged(state) => {
+                    ctrl_pressed = state == ModifiersState::CTRL;
+                },
                 WindowEvent::ReceivedCharacter(char) => {
                     match char {
                         '\u{8}' => { state.text.pop(); },
-                        '\r' => { state.sheet.set_text(state.selected.clone(), state.text.clone()) },
-                        _ => { state.text.push(char); },
+                        _ => {
+                            if !ctrl_pressed {
+                                state.text.push(char);
+                            } else {
+                                state.sheet.set_text(state.selected.clone(), state.text.trim_end().to_string())
+                            }
+                        },
                     }
-                    //println!("Got char: {:?}", char);
                     env.windowed_context.window().request_redraw();
                 },
                 WindowEvent::KeyboardInput {
