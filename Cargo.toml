@@ -10,3 +10,5 @@ glutin = "0.28"
 gl = "0.14.0"
 pest = "2.1"
 pest_derive = "2.1"
+rustpython = { path = "extern/RustPython" }
+rustpython-vm = { path = "extern/RustPython/vm" }

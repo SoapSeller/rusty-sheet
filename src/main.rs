@@ -1,3 +1,7 @@
+
+#[macro_use]
+extern crate rustpython_vm;
+
 mod renderer;
 mod sheet;
 mod sheet_state;
