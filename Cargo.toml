@@ -10,3 +10,7 @@ glutin = "0.28"
 gl = "0.14.0"
 pest = "2.1"
 pest_derive = "2.1"
+
+[dependencies.pyo3]
+version = "0.15.1"
+features = ["auto-initialize"]

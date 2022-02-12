@@ -23,7 +23,7 @@ fn col_to_letters(col: usize) -> String {
             break;
         }
         scratch -= 1;
-    } 
+    }
 
     text
 }
@@ -177,7 +177,7 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
 
                     let rect = {
                         // Idx for rect
-                        let idx = CellIdx{col: i, row: j};    
+                        let idx = CellIdx{col: i, row: j};
                         cell_rect(None, &idx)
                     };
 
@@ -190,11 +190,11 @@ fn render_grid(canvas: &mut skia_safe::canvas::Canvas, size: &ISize, state: &mut
                         let (_, bounds) = font.measure_str(str, None);
 
                         if rect.width() > bounds.width() {
-                            canvas.draw_str(str, (rect.left() + (rect.width() - bounds.width())/2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
+                            canvas.draw_str(str, (rect.left() + (rect.width() - bounds.width())/2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);
                         } else {
                             canvas.save();
                             canvas.clip_rect(rect, None, None);
-                            canvas.draw_str(str, (rect.left() + 2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);    
+                            canvas.draw_str(str, (rect.left() + 2.0, rect.top() + (rect.height() + bounds.height())/2.0), &font, &text_paint);
                             canvas.restore();
                         }
 
