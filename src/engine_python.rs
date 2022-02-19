@@ -9,16 +9,6 @@ use pyo3::types::PyString;
 
 #[pyfunction]
 fn cell(py: Python<'_>, sheet: SheetWrapper, input: String) -> PyResult<&PyString> {
-    // // We release the GIL here so any other Python threads get a chance to run.
-    // py.allow_threads(move || {
-    //     // An example of an "expensive" Rust calculation
-    //     let sum = numbers.iter().sum();
-
-    //     Ok(sum)
-    // })
-
-    //py.
-
     let text;
     unsafe {
         let ref_sheet: &mut SheetState = &mut *sheet.state_ptr;
@@ -27,7 +17,6 @@ fn cell(py: Python<'_>, sheet: SheetWrapper, input: String) -> PyResult<&PyStrin
     }
 
     let str = PyString::new(py, text.as_str());
-
 
     Ok(str)
 }
@@ -38,20 +27,8 @@ struct SheetWrapper {
      state_ptr: *mut SheetState
 }
 
-
 pub fn calc(sheet_state: &mut SheetState, text: &str) -> String {
     let res: PyResult<String> = Python::with_gil(|py| {
-        // let sys = py.import("sys")?;
-        // let version: String = sys.getattr("version")?.extract()?;
-
-        // let locals = [("os", py.import("os")?)].into_py_dict(py);
-        // let code = "os.getenv('USER') or os.getenv('USERNAME') or 'Unknown'";
-        // let user: String = py.eval(code, None, Some(&locals))?.extract()?;
-
-        // println!("Hello {}, I'm Python {}", user, version);
-        // Ok(user)
-
-
         let locals = PyDict::new(py);
 
         let fun = pyo3::wrap_pyfunction!(cell, py)?;

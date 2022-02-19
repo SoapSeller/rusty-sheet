@@ -46,7 +46,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn plain_values() {
+    fn simple_engine_plain() {
         let mut state = SheetState::new();
 
         let idx = state.selected.clone();
@@ -112,10 +112,9 @@ mod tests {
     }
 
     #[test]
-    fn plain_python() {
+    fn python_plain() {
         let mut state = SheetState::new();
         let mut idx = state.selected.clone();
-
 
         assert_eq!(state.get_value(&idx), "".to_string());
 
@@ -134,6 +133,20 @@ mod tests {
         state.sheet.insert(idx.clone(), cell);
         assert_eq!(state.get_value(&idx), "5.2".to_string());
 
+    }
+
+    #[test]
+    fn python_reference()
+    {
+        let mut state = SheetState::new();
+        let mut idx = state.selected.clone();
+
+        assert_eq!(state.get_value(&idx), "".to_string());
+
+        let cell = Cell{engine: EngineType::Python, value: "5.2".to_string()};
+
+        state.sheet.insert(idx.clone(), cell);
+        assert_eq!(state.get_value(&idx), "5.2".to_string());
 
         let cell = Cell{engine: EngineType::Python, value: "cell(sheet, 'A1')".to_string()};
 
@@ -141,6 +154,5 @@ mod tests {
         state.sheet.insert(idx.clone(), cell);
         assert_eq!(state.get_value(&idx), "5.2".to_string());
     }
-
 
 }
