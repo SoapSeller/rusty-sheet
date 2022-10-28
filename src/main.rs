@@ -1,12 +1,12 @@
-mod renderer;
+
 mod sheet;
 mod sheet_state;
 mod engine_simple;
+#[cfg(feature = "python")]
 mod engine_python;
 
 use std::time::Instant;
 
-use glutin::event::ModifiersState;
 use sheet_state::*;
 
 const DEBOUNCE_MILLIS: u128 = 120;
@@ -22,6 +22,21 @@ fn debounce<F>(mut func: F)  -> impl FnMut(&mut SheetState) where F: FnMut(&mut 
     }
 }
 
+
+#[cfg(feature = "druidui")]
+mod druid_ui;
+
+#[cfg(feature = "druidui")]
+fn main() -> Result<(), druid::PlatformError> {
+    druid_ui::main()
+}
+
+#[cfg(feature = "skia_ui")]
+mod skia_renderer;
+
+#[cfg(feature = "skiaui")]
+use glutin::event::ModifiersState;
+#[cfg(feature = "skiaui")]
 fn main() {
     use gl::types::*;
     use glutin::{
@@ -210,7 +225,7 @@ fn main() {
                 {
                     let canvas = env.surface.canvas();
                     canvas.clear(Color::WHITE);
-                    renderer::render(canvas, &mut state);
+                    skia_renderer::render(canvas, &mut state);
                 }
                 env.surface.canvas().flush();
                 env.windowed_context.swap_buffers().unwrap();

@@ -20,6 +20,7 @@ impl Add for CellIdx {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Copy)]
 pub enum EngineType {
     Simple,
+    #[cfg(feature = "python")]
     Python
 }
 

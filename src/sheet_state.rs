@@ -1,5 +1,7 @@
 
-use crate::{sheet::*, engine_simple, engine_python};
+use crate::{sheet::*, engine_simple};
+#[cfg(feature = "python")]
+use create::engine_python;
 
 pub struct SheetState {
     pub selected: CellIdx,
@@ -29,6 +31,7 @@ impl SheetState {
 
         let semi_final = match engine {
             EngineType::Simple => { engine_simple::calc(self, text.as_str()) },
+            #[cfg(feature = "python")]
             EngineType::Python => { engine_python::calc(self, text.as_str()) }
         };
 
